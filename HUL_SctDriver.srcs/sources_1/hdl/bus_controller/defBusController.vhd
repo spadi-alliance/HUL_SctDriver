@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 
 package defBCT is
 
-  constant kCurrentVersion      : std_logic_vector(31 downto 0):= x"4C100100";
+  constant kCurrentVersion      : std_logic_vector(31 downto 0):= x"4C100101";
   constant kNumModules          : natural:= 4;
 
   -- Local Bus definition

@@ -44,7 +44,7 @@ architecture RTL of ManchesterTx is
   signal fifo_read_gate   : std_logic;
 
   type TxChipType is
-    (Init, Idle, SyncTxChip, SendData, Finalize, Done);
+    (Init, Idle, Balance, SyncTxChip, SendData, Finalize, Done);
   signal state_tx         : TxChipType;
 
   -- FIFO --
@@ -106,6 +106,16 @@ begin
             if(start = '1') then
               busy_tx     <= '1';
               en_tx       <= '1';
+              sync_count  := kNumBalanceCycle-1;
+              state_tx    <= Balance;
+            end if;
+
+          when Balance =>
+            if(edge_tx_ack = "01") then
+              sync_count  := sync_count -1;
+            end if;
+
+            if(sync_count = 0) then
               sync_count  := kNumSyncCycle-1;
               state_tx    <= SyncTxChip;
             end if;
@@ -174,6 +184,9 @@ begin
         if(fifo_data_is_valid = '1') then
           reg_header  <= kDataHeader;
           reg_data    <= reg_fifo_dout;
+        elsif(state_tx = Balance) then
+          reg_header  <= (others => '0');
+          reg_data    <= (others => '0');
         else
           reg_header  <= kSyncHeader;
           reg_data    <= sync_data;

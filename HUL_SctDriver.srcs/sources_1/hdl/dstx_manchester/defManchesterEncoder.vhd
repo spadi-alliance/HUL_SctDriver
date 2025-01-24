@@ -16,6 +16,7 @@ package defManchesterEncoder is
   constant kLengthFrame   : integer := kSyncHeader'length + kZeroData'length;
 
   -- Manchester TX --
-  constant kNumSyncCycle  : integer := 4000;
+  constant kNumBalanceCycle   : integer := 2000;
+  constant kNumSyncCycle      : integer := 2000;
 
 end package;
