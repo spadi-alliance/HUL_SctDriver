@@ -9,6 +9,7 @@ package defRxChipSpiEmu is
   -- Local Address  -------------------------------------------------------
   constant kWriteData       : LocalAddressType := x"000"; -- W,   [7:0]
   constant kBusyFlag        : LocalAddressType := x"010"; -- R,   [0:0]
+  constant kStateCom        : LocalAddressType := x"020"; -- W,   [0:0]
 
   constant kStartCycle      : LocalAddressType := x"100"; -- W,
 end package;

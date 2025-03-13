@@ -11,7 +11,7 @@ package defManchesterEncoder is
 
   subtype DsTxDataType    is std_logic_vector(7 downto 0);
   constant kZeroData      : DsTxDataType   := X"00";
-  constant kSyncData      : DsTxDataType   := X"01";
+  constant kSyncData      : DsTxDataType   := X"10";
 
   constant kLengthFrame   : integer := kSyncHeader'length + kZeroData'length;
 
