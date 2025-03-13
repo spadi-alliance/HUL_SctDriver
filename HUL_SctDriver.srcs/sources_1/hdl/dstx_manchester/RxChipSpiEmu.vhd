@@ -39,17 +39,20 @@ architecture RTL of RxChipSpiEmu is
   signal sync_reset           : std_logic;
 
   -- internal signal declaration ----------------------------------------
-
+  signal mosi_txout     : std_logic;
 
   -- Local bus --
   signal reg_data_in    : DsTxDataType;
   signal en_write       : std_logic;
   signal start_a_cycle  : std_logic;
   signal busy_tx        : std_logic;
+  signal state_com      : std_logic;
 
   signal state_lbus	    : BusProcessType;
 begin
   -- =============================== body ===============================
+
+  MOSI  <= mosi_txout when(state_com = '1') else '0';
 
   u_RxChipSpiInst : entity mylib.ManchesterTx
     generic map(
@@ -65,7 +68,7 @@ begin
       busy      => busy_tx,
 
       -- TX port --
-      MOSI      => MOSI
+      MOSI      => mosi_txout
     );
 
   ---------------------------------------------------------------------
@@ -104,6 +107,10 @@ begin
             when kWriteData(kNonMultiByte'range) =>
               reg_data_in   <= dataLocalBusIn;
               en_write      <= '1';
+              state_lbus	  <= Finalize;
+
+            when kStateCom(kNonMultiByte'range) =>
+              state_com     <= dataLocalBusIn(0);
               state_lbus	  <= Finalize;
 
             when kStartCycle(kNonMultiByte'range) =>

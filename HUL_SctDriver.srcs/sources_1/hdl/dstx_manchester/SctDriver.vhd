@@ -39,13 +39,14 @@ architecture RTL of SctDriver is
   signal sync_reset           : std_logic;
 
   -- internal signal declaration ----------------------------------------
-
+  signal mosi_txout     : std_logic_vector(kNumIO-1 downto 0);
 
   -- Local bus --
   signal reg_data_in    : DsTxDataType;
   signal en_write       : std_logic_vector(kNumIO-1 downto 0);
   signal start_a_cycle  : std_logic_vector(kNumIO-1 downto 0);
   signal busy_tx        : std_logic_vector(kNumIO-1 downto 0);
+  signal state_com      : std_logic_vector(kNumIO-1 downto 0);
 
   signal write_address  : std_logic_vector(7 downto 0);
 
@@ -64,6 +65,8 @@ begin
   gen_RxChip : for i in 0 to kNumIO-1 generate
   begin
 
+    MOSI(i) <= mosi_txout(i) when(state_com(i) = '1') else '1';
+
     u_RxChipSpiInst : entity mylib.ManchesterTx
       generic map(
         freqSysClk => kFreqSysClk
@@ -78,7 +81,7 @@ begin
         busy      => busy_tx(i),
 
         -- TX port --
-        MOSI      => MOSI(i)
+        MOSI      => mosi_txout(i)
       );
     end generate;
 
@@ -117,6 +120,18 @@ begin
 
         when Write =>
           case addrLocalBus(kNonMultiByte'range) is
+            when kStateCom(kNonMultiByte'range) =>
+            if(addrLocalBus(kMultiByte'range) = k1stByte) then
+                state_com(7 downto 0)   <= dataLocalBusIn;
+              elsif(addrLocalBus(kMultiByte'range) = k2ndByte) then
+                state_com(15 downto 8)   <= dataLocalBusIn;
+              elsif(addrLocalBus(kMultiByte'range) = k3rdByte) then
+                state_com(23 downto 16)   <= dataLocalBusIn;
+              else
+                state_com(31 downto 24)   <= dataLocalBusIn;
+              end if;
+              state_lbus	    <= Finalize;
+
             when kStartCycle(kNonMultiByte'range) =>
             if(addrLocalBus(kMultiByte'range) = k1stByte) then
                 start_a_cycle(7 downto 0)   <= dataLocalBusIn;

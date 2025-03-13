@@ -44,7 +44,7 @@ architecture RTL of ManchesterTx is
   signal fifo_read_gate   : std_logic;
 
   type TxChipType is
-    (Init, Idle, SyncTxChip, SendData, Finalize, Done);
+    (Init, Idle, Balance, SyncTxChip, SendData, Finalize, Done);
   signal state_tx         : TxChipType;
 
   -- FIFO --
@@ -80,8 +80,13 @@ begin
         sync_data   <= kSyncData;
       else
         edge_tx_ack   <= edge_tx_ack(0) & tx_ack;
-        if(edge_tx_ack = "01") then
-          sync_data   <= sync_data(kSyncData'left-1 downto 0) & sync_data(kSyncData'left);
+        if(state_tx = SyncTxChip) then
+          if(edge_tx_ack = "01") then
+            sync_data   <= sync_data(kSyncData'high-1 downto 0) & sync_data(kSyncData'high);
+--            sync_data   <= sync_data(0) & sync_data(kSyncData'high downto 1);
+          end if;
+        else
+            sync_data   <= kSyncData;
         end if;
       end if;
     end if;
@@ -94,7 +99,7 @@ begin
     if(clk'event and clk = '1') then
       if(reset = '1') then
         busy_tx       <= '0';
-        en_tx         <= '0';
+        en_tx         <= '1';
         fifo_read_gate  <= '0';
         state_tx      <= Init;
       else
@@ -106,6 +111,18 @@ begin
             if(start = '1') then
               busy_tx     <= '1';
               en_tx       <= '1';
+              --sync_count  := kNumBalanceCycle-1;
+              --state_tx    <= Balance;
+              sync_count  := kNumSyncCycle-1;
+              state_tx    <= SyncTxChip;
+            end if;
+
+          when Balance =>
+            if(edge_tx_ack = "01") then
+              sync_count  := sync_count -1;
+            end if;
+
+            if(sync_count = 0) then
               sync_count  := kNumSyncCycle-1;
               state_tx    <= SyncTxChip;
             end if;
@@ -138,7 +155,7 @@ begin
 
           when Done =>
             busy_tx   <= '0';
-            en_tx     <= '0';
+            en_tx     <= '1';
             state_tx  <= Init;
 
           when others =>
@@ -174,6 +191,10 @@ begin
         if(fifo_data_is_valid = '1') then
           reg_header  <= kDataHeader;
           reg_data    <= reg_fifo_dout;
+        --elsif(state_tx = Balance) then
+        elsif(state_tx = Idle) then
+          reg_header  <= (others => '0');
+          reg_data    <= (others => '0');
         else
           reg_header  <= kSyncHeader;
           reg_data    <= sync_data;
